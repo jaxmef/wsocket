@@ -138,6 +138,7 @@ func TestHandleConnection_NewConnection_WriteResponse(t *testing.T) {
 
 		time.Sleep(100 * time.Millisecond)
 		msgType, msg, err := conn.ReadMessage()
+		assert.NoError(t, err)
 		assert.Equal(t, websocket.TextMessage, msgType)
 		assert.Equal(t, []byte(`{"type": "sum-response", "result": 3}`), msg)
 
