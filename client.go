@@ -45,85 +45,88 @@ func NewClient(ctx context.Context, resolver Resolver, logger Logger) Client {
 
 // AddMiddleware adds a middleware to the client.
 // Middlewares are executed in the order they are added.
-func (s *client) AddMiddleware(middleware Middleware) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.middlewares = append(s.middlewares, middleware)
+func (c *client) AddMiddleware(middleware Middleware) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.middlewares = append(c.middlewares, middleware)
 }
 
 // NewConnection creates a new connection instance.
-// conn is used to read and write messages.
-// If conn is nil, nil is returned.
+// websocketConn is used to read and write messages.
+// If websocketConn is nil, nil is returned.
 // The connection is automatically closed when the client is canceled.
-func (s *client) NewConnection(conn *websocket.Conn) Connection {
-	if conn == nil {
+func (c *client) NewConnection(websocketConn *websocket.Conn) Connection {
+	if websocketConn == nil {
 		return nil
 	}
 
-	c := &connection{
-		logger:     s.logger,
-		conn:       conn,
+	conn := &connection{
+		logger:     c.logger,
+		conn:       websocketConn,
 		closedChan: make(chan struct{}),
 	}
 
-	go s.handleConnection(c)
+	go c.handleConnection(conn)
 
-	return c
+	return conn
 }
 
-func (s *client) handleConnection(c *connection) {
+func (c *client) handleConnection(conn *connection) {
 	defer func() {
-		if err := c.conn.Close(); err != nil && !errors.Is(err, net.ErrClosed) {
-			s.logger.Printf("failed to close connection: %v", err)
+		if err := conn.conn.Close(); err != nil && !errors.Is(err, net.ErrClosed) {
+			c.logger.Printf("failed to close connection: %v", err)
 		}
-		close(c.closedChan)
+		close(conn.closedChan)
 	}()
 
 	for {
 		select {
-		case <-s.ctx.Done():
+		case <-c.ctx.Done():
 			return
 		default:
-			// todo: check type
-			_, msg, err := c.conn.ReadMessage()
+			_, msg, err := conn.conn.ReadMessage()
 			if err != nil {
 				if errors.Is(err, net.ErrClosed) || websocket.IsCloseError(err, websocket.CloseNormalClosure) {
 					return
 				}
-				s.logger.Printf("failed to read message: %v", err)
+				c.logger.Printf("failed to read message: %v", err)
 				return
 			}
 
-			ctx, msg, err := s.runMiddlewares(msg)
-			if err != nil {
-				s.logger.Printf("failed to run middlewares: %v", err)
-				continue
-			}
-
-			resp, err := s.resolver.Handle(ctx, msg)
-			if err != nil {
-				s.logger.Printf("failed to handle message: %v", err)
-				continue
-			}
-
-			if resp.msgType != 0 {
-				err = c.Write(resp)
-				if err != nil {
-					s.logger.Printf("failed to write message: %v", err)
-					continue
-				}
-			}
+			go c.handleMessage(msg, conn)
 		}
 	}
 }
 
-func (s *client) runMiddlewares(msg []byte) (context.Context, []byte, error) {
+func (c *client) handleMessage(msg []byte, conn *connection) {
+	ctx, msg, err := c.runMiddlewares(msg)
+	if err != nil {
+		c.logger.Printf("failed to run middlewares: %v", err)
+		return
+	}
+
+	resp, err := c.resolver.Handle(ctx, msg)
+	if err != nil {
+		c.logger.Printf("failed to handle message: %v", err)
+		return
+	}
+
+	if resp.msgType != 0 {
+		err = conn.Write(resp)
+		if err != nil {
+			c.logger.Printf("failed to write message: %v", err)
+			return
+		}
+	}
+}
+
+func (c *client) runMiddlewares(msg []byte) (context.Context, []byte, error) {
 	ctx := context.Background()
 
-	s.mu.RLock()
-	defer s.mu.RUnlock()
+	c.mu.RLock()
+	defer c.mu.RUnlock()
 
-	for _, middleware := range s.middlewares {
+	for _, middleware := range c.middlewares {
 		var err error
 		ctx, msg, err = middleware(ctx, msg)
 		if err != nil {
