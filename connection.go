@@ -8,8 +8,16 @@ import (
 )
 
 type Connection interface {
+	// Write writes a message to the connection.
+	// If the message type is 0, it is set to websocket.TextMessage.
+	// If the message type is not websocket.TextMessage, websocket.BinaryMessage or websocket.CloseMessage, an error is returned.
 	Write(message Message) error
+
+	// Close closes the connection.
+	// If the connection is already closed, an error is returned.
 	Close() error
+
+	// Wait returns a channel that is closed when the connection is closed.
 	Wait() <-chan struct{}
 }
 

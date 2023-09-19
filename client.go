@@ -25,6 +25,10 @@ type client struct {
 
 type Middleware func(ctx context.Context, msg []byte) (context.Context, []byte, error)
 
+// NewClient creates a new client instance.
+// ctx is used to cancel the client.
+// resolver is used to resolve incoming messages.
+// logger is used to log errors. If nil, a default logger is used. You can use NoLogger to disable logging.
 func NewClient(ctx context.Context, resolver Resolver, logger Logger) Client {
 	if logger == nil {
 		logger = &defaultLogger{}
@@ -39,12 +43,18 @@ func NewClient(ctx context.Context, resolver Resolver, logger Logger) Client {
 	}
 }
 
+// AddMiddleware adds a middleware to the client.
+// Middlewares are executed in the order they are added.
 func (s *client) AddMiddleware(middleware Middleware) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.middlewares = append(s.middlewares, middleware)
 }
 
+// NewConnection creates a new connection instance.
+// conn is used to read and write messages.
+// If conn is nil, nil is returned.
+// The connection is automatically closed when the client is canceled.
 func (s *client) NewConnection(conn *websocket.Conn) Connection {
 	if conn == nil {
 		return nil

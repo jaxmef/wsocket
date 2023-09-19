@@ -8,7 +8,10 @@ import (
 	"sync"
 )
 
+// Resolver is used to resolve a message to a handler.
 type Resolver interface {
+	// Handle resolves a message to a handler and returns the result of the handler.
+	// If the message cannot be resolved, an error is returned.
 	Handle(ctx context.Context, msg []byte) (Message, error)
 }
 
@@ -21,6 +24,10 @@ type JSONResolver struct {
 	handlers map[string]Handler
 }
 
+// NewJSONResolver creates a new JSONResolver instance.
+// field is the name of the field in the JSON message that is used to resolve the handler.
+// For example, if field is "type", the message {"type": "sum-request", "a": 1, "b": 2} is resolved to the handler registered for "sum-request".
+// If the field is nested, use dot notation, e.g. "type.name".
 func NewJSONResolver(field string) *JSONResolver {
 	return &JSONResolver{
 		field:    field,
@@ -28,6 +35,8 @@ func NewJSONResolver(field string) *JSONResolver {
 	}
 }
 
+// AddHandler adds a handler for a message type.
+// name is the value of the field that is used to resolve the handler.
 func (r *JSONResolver) AddHandler(name string, handler Handler) {
 	r.mu.Lock()
 	defer r.mu.Unlock()

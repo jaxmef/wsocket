@@ -2,6 +2,8 @@ package wsocket
 
 import "github.com/gorilla/websocket"
 
+// Message is a message that can be sent to a connection.
+// It is recommended to use the NewTextMessage, NewBinaryMessage and NewCloseMessage functions to create a Message.
 type Message struct {
 	msgType int
 	Message []byte
