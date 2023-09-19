@@ -129,6 +129,8 @@ func TestHandleConnection_NewConnection_WithMiddleware(t *testing.T) {
 
 	<-conn.Wait()
 
+	time.Sleep(100 * time.Millisecond)
+
 	resolver.callsMutex.Lock()
 	assert.Equal(t, 1, resolver.calls)
 	resolver.callsMutex.Unlock()
