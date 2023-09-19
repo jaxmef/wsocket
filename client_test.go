@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"reflect"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -82,7 +83,11 @@ func TestHandleConnection_NewConnection(t *testing.T) {
 
 	<-conn.Wait()
 
+	time.Sleep(100 * time.Millisecond)
+
+	resolver.callsMutex.Lock()
 	assert.Equal(t, 1, resolver.calls)
+	resolver.callsMutex.Unlock()
 }
 
 func TestHandleConnection_NewConnection_WithMiddleware(t *testing.T) {
@@ -112,17 +117,29 @@ func TestHandleConnection_NewConnection_WithMiddleware(t *testing.T) {
 	}
 
 	client := NewClient(context.Background(), resolver, &NoLogger{})
+
+	middlewareCallsMutex := sync.Mutex{}
 	middlewareCalls := 0
 	client.AddMiddleware(func(ctx context.Context, msg []byte) (context.Context, []byte, error) {
+		middlewareCallsMutex.Lock()
 		middlewareCalls++
+		middlewareCallsMutex.Unlock()
+
 		return ctx, msg, nil
 	})
 	conn := client.NewConnection(clientConn)
 
 	<-conn.Wait()
 
+	time.Sleep(100 * time.Millisecond)
+
+	resolver.callsMutex.Lock()
 	assert.Equal(t, 1, resolver.calls)
+	resolver.callsMutex.Unlock()
+
+	middlewareCallsMutex.Lock()
 	assert.Equal(t, 1, middlewareCalls)
+	middlewareCallsMutex.Unlock()
 }
 
 func TestHandleConnection_NewConnection_WriteResponse(t *testing.T) {
@@ -175,17 +192,23 @@ func TestHandleConnection_NewConnection_WriteResponse(t *testing.T) {
 
 	<-conn.Wait()
 
+	time.Sleep(100 * time.Millisecond)
+
 	assert.Equal(t, 1, resolverCalls)
 }
 
 type testResolver struct {
 	expectedMessage []byte
 	t               *testing.T
+	callsMutex      sync.Mutex
 	calls           int
 }
 
 func (r *testResolver) Handle(_ context.Context, msg []byte) (Message, error) {
+	r.callsMutex.Lock()
 	r.calls++
+	r.callsMutex.Unlock()
+
 	assert.Equal(r.t, r.expectedMessage, msg)
 	return Message{}, nil
 }

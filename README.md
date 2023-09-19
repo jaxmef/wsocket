@@ -1,4 +1,8 @@
 # WSocket
+=========================================================
+
+[![Coverage Status](https://coveralls.io/repos/github/jaxmef/wsocket/badge.svg?branch=feature/coveralls)](https://coveralls.io/github/jaxmef/wsocket?branch=feature/coveralls)
+
 Golang WebSocket client/server library.
 
 The aim of this library is to provide a similar way to regular HTTP routing for WebSocket messages. This is done by using a message resolver. The default resolver is a JSON resolver that will match on a field in the JSON message. Custom resolvers can be created by implementing the `wsocket.Resolver` interface.
