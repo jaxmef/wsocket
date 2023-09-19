@@ -83,6 +83,8 @@ func TestHandleConnection_NewConnection(t *testing.T) {
 
 	<-conn.Wait()
 
+	time.Sleep(100 * time.Millisecond)
+
 	resolver.callsMutex.Lock()
 	assert.Equal(t, 1, resolver.calls)
 	resolver.callsMutex.Unlock()
@@ -189,6 +191,8 @@ func TestHandleConnection_NewConnection_WriteResponse(t *testing.T) {
 	conn := client.NewConnection(clientConn)
 
 	<-conn.Wait()
+
+	time.Sleep(100 * time.Millisecond)
 
 	assert.Equal(t, 1, resolverCalls)
 }
