@@ -7,11 +7,15 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-type Connection interface {
-	// Write writes a message to the connection.
+type ResponseWriter interface {
+	// WriteMessage writes a message to the connection.
 	// If the message type is 0, it is set to websocket.TextMessage.
 	// If the message type is not websocket.TextMessage, websocket.BinaryMessage or websocket.CloseMessage, an error is returned.
-	Write(message Message) error
+	WriteMessage(msg Message) error
+}
+
+type Connection interface {
+	ResponseWriter
 
 	// Close closes the connection.
 	// If the connection is already closed, an error is returned.
@@ -28,7 +32,7 @@ type connection struct {
 	closedChan chan struct{}
 }
 
-func (c *connection) Write(message Message) error {
+func (c *connection) WriteMessage(message Message) error {
 	if message.msgType == 0 {
 		message.msgType = websocket.TextMessage
 	}

@@ -51,7 +51,7 @@ func TestConnection_Write(t *testing.T) {
 		conn: conn,
 	}
 
-	err = wsConn.Write(message)
+	err = wsConn.WriteMessage(message)
 	assert.NoError(t, err)
 
 	time.Sleep(200 * time.Millisecond)

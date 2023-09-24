@@ -2,6 +2,7 @@ package wsocket
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/gorilla/websocket"
@@ -13,14 +14,20 @@ func TestJSONResolver_Handle(t *testing.T) {
 	resolver := NewJSONResolver("type")
 
 	// Add some test handlers
-	resolver.AddHandler("type1", func(ctx context.Context, msg []byte) (Message, error) {
-		return NewTextMessage([]byte("Handler for type1")), nil
+	resolver.AddHandler("type1", func(ctx context.Context, msg []byte, rw ResponseWriter) error {
+		err := rw.WriteMessage(NewTextMessage([]byte("Handler for type1")))
+		assert.NoError(t, err)
+		return nil
 	})
-	resolver.AddHandler("type2", func(ctx context.Context, msg []byte) (Message, error) {
-		return NewBinaryMessage([]byte("Handler for type2")), nil
+	resolver.AddHandler("type2", func(ctx context.Context, msg []byte, rw ResponseWriter) error {
+		err := rw.WriteMessage(NewBinaryMessage([]byte("Handler for type2")))
+		assert.NoError(t, err)
+		return nil
 	})
-	resolver.AddHandler("type3", func(ctx context.Context, msg []byte) (Message, error) {
-		return NewCloseMessage(), nil
+	resolver.AddHandler("type3", func(ctx context.Context, msg []byte, rw ResponseWriter) error {
+		err := rw.WriteMessage(NewCloseMessage())
+		assert.NoError(t, err)
+		return nil
 	})
 
 	tests := []struct {
@@ -73,16 +80,36 @@ func TestJSONResolver_Handle(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			message, err := resolver.Handle(context.Background(), []byte(test.inputMessage))
+			rw := &testResponseWriter{}
+
+			err := resolver.Handle(context.Background(), []byte(test.inputMessage), rw)
 			if test.expectedError {
 				assert.Error(t, err, "Expected an error")
 			} else {
 				assert.NoError(t, err, "Expected no error")
+				message := rw.GetWrittenMessage()
+				assert.NotNilf(t, message, "Expected a message to be written")
 				assert.Equal(t, test.expectedResult, string(message.Message), "Unexpected message type")
 				assert.Equal(t, test.expectedType, message.msgType, "Unexpected message type")
 			}
 		})
 	}
+}
+
+type testResponseWriter struct {
+	msg *Message
+}
+
+func (rw *testResponseWriter) WriteMessage(msg Message) error {
+	if rw.msg != nil {
+		return fmt.Errorf("message already written")
+	}
+	rw.msg = &msg
+	return nil
+}
+
+func (rw *testResponseWriter) GetWrittenMessage() *Message {
+	return rw.msg
 }
 
 func TestGetField(t *testing.T) {

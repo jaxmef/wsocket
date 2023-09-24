@@ -32,7 +32,7 @@ func main() {
 	}
 	conn := wsClient.NewConnection(c)
 	go func() {
-		err = conn.Write(wsocket.NewTextMessage([]byte(`{"type": "sum-request", "a": 1, "b": 2}`)))
+		err = conn.WriteMessage(wsocket.NewTextMessage([]byte(`{"type": "sum-request", "a": 1, "b": 2}`)))
 		if err != nil {
 			log.Printf("Failed to write message: %v\n", err)
 			return
@@ -53,15 +53,15 @@ type sumResult struct {
 	Result int    `json:"result"`
 }
 
-func handleSum(_ context.Context, msg []byte) (wsocket.Message, error) {
+func handleSum(_ context.Context, msg []byte, _ wsocket.ResponseWriter) error {
 	jsonMsg := &sumResult{}
 	if err := json.Unmarshal(msg, jsonMsg); err != nil {
-		return wsocket.Message{}, err
+		return err
 	}
 
 	log.Printf("Sum result: %d\n", jsonMsg.Result)
 
-	return wsocket.Message{}, nil
+	return nil
 }
 
 func messageLogger(ctx context.Context, msg []byte) (context.Context, []byte, error) {

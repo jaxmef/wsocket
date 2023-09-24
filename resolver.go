@@ -12,10 +12,10 @@ import (
 type Resolver interface {
 	// Handle resolves a message to a handler and returns the result of the handler.
 	// If the message cannot be resolved, an error is returned.
-	Handle(ctx context.Context, msg []byte) (Message, error)
+	Handle(ctx context.Context, msg []byte, rw ResponseWriter) error
 }
 
-type Handler func(ctx context.Context, msg []byte) (Message, error)
+type Handler func(ctx context.Context, msg []byte, rw ResponseWriter) error
 
 type JSONResolver struct {
 	mu sync.Mutex
@@ -43,10 +43,10 @@ func (r *JSONResolver) AddHandler(name string, handler Handler) {
 	r.handlers[name] = handler
 }
 
-func (r *JSONResolver) Handle(ctx context.Context, msg []byte) (Message, error) {
+func (r *JSONResolver) Handle(ctx context.Context, msg []byte, rw ResponseWriter) error {
 	var data map[string]interface{}
 	if err := json.Unmarshal(msg, &data); err != nil {
-		return Message{}, fmt.Errorf("failed to unmarshal message: %v", err)
+		return fmt.Errorf("failed to unmarshal message: %v", err)
 	}
 
 	r.mu.Lock()
@@ -54,15 +54,15 @@ func (r *JSONResolver) Handle(ctx context.Context, msg []byte) (Message, error) 
 
 	fieldValue, ok := getField(data, r.field)
 	if !ok {
-		return Message{}, fmt.Errorf("failed to get field %q from message", r.field)
+		return fmt.Errorf("failed to get field %q from message", r.field)
 	}
 
 	handler, ok := r.handlers[fieldValue]
 	if !ok {
-		return Message{}, fmt.Errorf("unknown message type '%q'", fieldValue)
+		return fmt.Errorf("unknown message type '%q'", fieldValue)
 	}
 
-	return handler(ctx, msg)
+	return handler(ctx, msg, rw)
 }
 
 func getField(data map[string]interface{}, fieldPath string) (string, bool) {

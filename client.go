@@ -105,18 +105,10 @@ func (c *client) handleMessage(msg []byte, conn *connection) {
 		return
 	}
 
-	resp, err := c.resolver.Handle(ctx, msg)
+	err = c.resolver.Handle(ctx, msg, conn)
 	if err != nil {
 		c.logger.Printf("failed to handle message: %v", err)
 		return
-	}
-
-	if resp.msgType != 0 {
-		err = conn.Write(resp)
-		if err != nil {
-			c.logger.Printf("failed to write message: %v", err)
-			return
-		}
 	}
 }
 

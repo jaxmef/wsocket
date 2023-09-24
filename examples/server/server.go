@@ -46,16 +46,19 @@ type sumRequest struct {
 	B    int    `json:"b"`
 }
 
-func handleSum(_ context.Context, msg []byte) (wsocket.Message, error) {
+func handleSum(_ context.Context, msg []byte, rw wsocket.ResponseWriter) error {
 	jsonMsg := &sumRequest{}
 	if err := json.Unmarshal(msg, jsonMsg); err != nil {
-		return wsocket.Message{}, err
+		return err
 	}
 
 	result := jsonMsg.A + jsonMsg.B
 	response := []byte(fmt.Sprintf(`{"type": "sum-response", "result": %d}`, result))
+	if err := rw.WriteMessage(wsocket.NewTextMessage(response)); err != nil {
+		return err
+	}
 
-	return wsocket.NewTextMessage(response), nil
+	return nil
 }
 
 func messageLogger(ctx context.Context, msg []byte) (context.Context, []byte, error) {

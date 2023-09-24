@@ -171,7 +171,7 @@ func TestHandleConnection_NewConnection_WriteResponse(t *testing.T) {
 
 	resolver := NewJSONResolver("type")
 	resolverCalls := 0
-	resolver.AddHandler("sum-request", func(_ context.Context, msg []byte) (Message, error) {
+	resolver.AddHandler("sum-request", func(_ context.Context, msg []byte, rw ResponseWriter) error {
 		resolverCalls++
 
 		jsonMsg := &struct {
@@ -183,8 +183,10 @@ func TestHandleConnection_NewConnection_WriteResponse(t *testing.T) {
 
 		result := jsonMsg.A + jsonMsg.B
 		response := []byte(fmt.Sprintf(`{"type": "sum-response", "result": %d}`, result))
+		err = rw.WriteMessage(NewTextMessage(response))
+		assert.NoError(t, err)
 
-		return NewTextMessage(response), nil
+		return nil
 	})
 
 	client := NewClient(context.Background(), resolver, NoLogger())
@@ -204,11 +206,11 @@ type testResolver struct {
 	calls           int
 }
 
-func (r *testResolver) Handle(_ context.Context, msg []byte) (Message, error) {
+func (r *testResolver) Handle(_ context.Context, msg []byte, rw ResponseWriter) error {
 	r.callsMutex.Lock()
 	r.calls++
 	r.callsMutex.Unlock()
 
 	assert.Equal(r.t, r.expectedMessage, msg)
-	return Message{}, nil
+	return nil
 }
