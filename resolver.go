@@ -38,10 +38,12 @@ func NewJSONResolver(field string) *JSONResolver {
 
 // AddHandler adds a handler for a message type.
 // name is the value of the field that is used to resolve the handler.
-func (r *JSONResolver) AddHandler(name string, handler Handler) {
+func (r *JSONResolver) AddHandler(name string, handler Handler) *JSONResolver {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.handlers[name] = handler
+
+	return r
 }
 
 func (r *JSONResolver) Handle(ctx context.Context, msg []byte, rw ResponseWriter) error {

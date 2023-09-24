@@ -40,20 +40,17 @@ func main() {
 }
 
 func getResolver() wsocket.Resolver {
-	eventResolver := getEventResolver()
+	r := wsocket.NewJSONResolver("type")
+	r.AddHandler("sum-request", handleSum)
 
-	resolver := wsocket.NewJSONResolver("type")
-	resolver.AddHandler("sum-request", handleSum)
-	resolver.AddHandler("event", eventResolver.Handle)
+	r.AddHandler("event",
+		wsocket.NewJSONResolver("data.type").
+			AddHandler("info", handleInfoEvent).
+			AddHandler("error", handleErrorEvent).
+			Handle,
+	)
 
-	return resolver
-}
-
-func getEventResolver() wsocket.Resolver {
-	eventResolver := wsocket.NewJSONResolver("data.type")
-	eventResolver.AddHandler("info", handleInfoEvent)
-	eventResolver.AddHandler("error", handleErrorEvent)
-	return eventResolver
+	return r
 }
 
 func messageLogger(ctx context.Context, msg []byte) (context.Context, []byte, error) {
