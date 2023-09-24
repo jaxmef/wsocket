@@ -18,7 +18,7 @@ import (
 
 func TestNewClient(t *testing.T) {
 	resolver := NewJSONResolver("type")
-	logger := &NoLogger{}
+	logger := NoLogger()
 
 	c := NewClient(context.Background(), resolver, logger)
 
@@ -29,7 +29,7 @@ func TestNewClient(t *testing.T) {
 func TestClient_AddMiddleware(t *testing.T) {
 	resolver := NewJSONResolver("type")
 
-	c := NewClient(context.Background(), resolver, &NoLogger{})
+	c := NewClient(context.Background(), resolver, NoLogger())
 
 	middleware := func(ctx context.Context, msg []byte) (context.Context, []byte, error) {
 		return ctx, msg, nil
@@ -46,7 +46,7 @@ func TestClient_AddMiddleware(t *testing.T) {
 func TestClient_NewConnection_Empty(t *testing.T) {
 	resolver := NewJSONResolver("type")
 
-	c := NewClient(context.Background(), resolver, &NoLogger{})
+	c := NewClient(context.Background(), resolver, NoLogger())
 
 	conn := c.NewConnection(nil)
 	assert.Nil(t, conn)
@@ -78,7 +78,7 @@ func TestHandleConnection_NewConnection(t *testing.T) {
 		t:               t,
 	}
 
-	client := NewClient(context.Background(), resolver, &NoLogger{})
+	client := NewClient(context.Background(), resolver, NoLogger())
 	conn := client.NewConnection(clientConn)
 
 	<-conn.Wait()
@@ -116,7 +116,7 @@ func TestHandleConnection_NewConnection_WithMiddleware(t *testing.T) {
 		t:               t,
 	}
 
-	client := NewClient(context.Background(), resolver, &NoLogger{})
+	client := NewClient(context.Background(), resolver, NoLogger())
 
 	middlewareCallsMutex := sync.Mutex{}
 	middlewareCalls := 0
@@ -187,7 +187,7 @@ func TestHandleConnection_NewConnection_WriteResponse(t *testing.T) {
 		return NewTextMessage(response), nil
 	})
 
-	client := NewClient(context.Background(), resolver, &NoLogger{})
+	client := NewClient(context.Background(), resolver, NoLogger())
 	conn := client.NewConnection(clientConn)
 
 	<-conn.Wait()

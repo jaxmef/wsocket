@@ -6,12 +6,20 @@ type Logger interface {
 	Printf(format string, v ...interface{})
 }
 
+func DefaultLogger() Logger {
+	return &defaultLogger{}
+}
+
 type defaultLogger struct{}
 
 func (l *defaultLogger) Printf(format string, v ...interface{}) {
 	log.Printf(format, v...)
 }
 
-type NoLogger struct{}
+func NoLogger() Logger {
+	return &noLogger{}
+}
 
-func (l *NoLogger) Printf(format string, v ...interface{}) {}
+type noLogger struct{}
+
+func (l *noLogger) Printf(format string, v ...interface{}) {}

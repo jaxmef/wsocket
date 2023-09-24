@@ -31,7 +31,7 @@ type Middleware func(ctx context.Context, msg []byte) (context.Context, []byte, 
 // logger is used to log errors. If nil, a default logger is used. You can use NoLogger to disable logging.
 func NewClient(ctx context.Context, resolver Resolver, logger Logger) Client {
 	if logger == nil {
-		logger = &defaultLogger{}
+		logger = DefaultLogger()
 	}
 
 	return &client{
