@@ -50,7 +50,7 @@ http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
 ...
 
 // wsocket.Connection has a Write method that will write the message to the websocket connection
-err = conn.Write(wsocket.NewTextMessage([]byte(`{"type": "sum-request", "a": 1, "b": 2}`)))
+err = conn.WriteMessage(wsocket.NewTextMessage([]byte(`{"type": "sum-request", "a": 1, "b": 2}`)))
 if err != nil {
     log.Printf("Failed to write message: %v\n", err)
     return
