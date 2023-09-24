@@ -2,10 +2,11 @@ package wsocket
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strings"
 	"sync"
+
+	"github.com/valyala/fastjson"
 )
 
 // Resolver is used to resolve a message to a handler.
@@ -18,7 +19,7 @@ type Resolver interface {
 type Handler func(ctx context.Context, msg []byte, rw ResponseWriter) error
 
 type JSONResolver struct {
-	mu sync.Mutex
+	mu sync.RWMutex
 
 	field    string
 	handlers map[string]Handler
@@ -44,16 +45,11 @@ func (r *JSONResolver) AddHandler(name string, handler Handler) {
 }
 
 func (r *JSONResolver) Handle(ctx context.Context, msg []byte, rw ResponseWriter) error {
-	var data map[string]interface{}
-	if err := json.Unmarshal(msg, &data); err != nil {
-		return fmt.Errorf("failed to unmarshal message: %v", err)
-	}
+	r.mu.RLock()
+	defer r.mu.RUnlock()
 
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
-	fieldValue, ok := getField(data, r.field)
-	if !ok {
+	fieldValue := fastjson.GetString(msg, strings.Split(r.field, ".")...)
+	if fieldValue == "" {
 		return fmt.Errorf("failed to get field %q from message", r.field)
 	}
 
@@ -63,31 +59,4 @@ func (r *JSONResolver) Handle(ctx context.Context, msg []byte, rw ResponseWriter
 	}
 
 	return handler(ctx, msg, rw)
-}
-
-func getField(data map[string]interface{}, fieldPath string) (string, bool) {
-	fields := strings.Split(fieldPath, ".")
-	curr := data
-
-	for i, field := range fields {
-		value, ok := curr[field]
-		if !ok {
-			return "", false
-		}
-
-		if i == len(fields)-1 {
-			if strValue, ok := value.(string); ok {
-				return strValue, true
-			}
-			return "", false
-		}
-
-		if nestedData, ok := value.(map[string]interface{}); ok {
-			curr = nestedData
-		} else {
-			return "", false
-		}
-	}
-
-	return "", false
 }
