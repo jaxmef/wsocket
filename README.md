@@ -2,7 +2,7 @@ WSocket: Golang WebSocket client/server library.
 =========================================================
 
 [![GoDoc](https://godoc.org/github.com/jaxmef/wsocket?status.svg)](http://godoc.org/github.com/jaxmef/wsocket)
-[![Coverage Status](https://coveralls.io/repos/github/jaxmef/wsocket/badge.svg?branch=feature/coveralls)](https://coveralls.io/github/jaxmef/wsocket?branch=feature/coveralls)
+[![Coverage Status](https://coveralls.io/repos/github/jaxmef/wsocket/badge.svg?branch=main)](https://coveralls.io/github/jaxmef/wsocket?branch=main)
 
 The primary goal of this library is to provide WebSocket message routing in a manner similar to conventional HTTP routing. It achieves this through the use of a message resolver. You can use a default JSON resolver to identify messages based on a specific field within the JSON content. Users can further customize their routing logic by implementing the wsocket.Resolver interface to create custom resolvers.
 
