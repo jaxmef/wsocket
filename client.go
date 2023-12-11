@@ -18,9 +18,10 @@ type client struct {
 	mu          sync.RWMutex
 	middlewares []Middleware
 
-	ctx      context.Context
-	resolver Resolver
-	logger   Logger
+	ctx           context.Context
+	resolver      Resolver
+	logger        Logger
+	writeChanSize int
 }
 
 type Middleware func(ctx context.Context, msg []byte) (context.Context, []byte, error)
@@ -29,17 +30,18 @@ type Middleware func(ctx context.Context, msg []byte) (context.Context, []byte, 
 // ctx is used to cancel the client.
 // resolver is used to resolve incoming messages.
 // logger is used to log errors. If nil, a default logger is used. You can use NoLogger to disable logging.
-func NewClient(ctx context.Context, resolver Resolver, logger Logger) Client {
+func NewClient(ctx context.Context, resolver Resolver, logger Logger, writeChanSize int) Client {
 	if logger == nil {
 		logger = DefaultLogger()
 	}
 
 	return &client{
-		mu:          sync.RWMutex{},
-		ctx:         ctx,
-		resolver:    resolver,
-		logger:      logger,
-		middlewares: make([]Middleware, 0),
+		mu:            sync.RWMutex{},
+		ctx:           ctx,
+		resolver:      resolver,
+		logger:        logger,
+		middlewares:   make([]Middleware, 0),
+		writeChanSize: writeChanSize,
 	}
 }
 
@@ -60,11 +62,7 @@ func (c *client) NewConnection(websocketConn *websocket.Conn) Connection {
 		return nil
 	}
 
-	conn := &connection{
-		logger:     c.logger,
-		conn:       websocketConn,
-		closedChan: make(chan struct{}),
-	}
+	conn := newConnection(c.logger, websocketConn, c.writeChanSize)
 
 	go c.handleConnection(conn)
 

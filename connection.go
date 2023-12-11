@@ -30,6 +30,21 @@ type connection struct {
 
 	conn       *websocket.Conn
 	closedChan chan struct{}
+
+	writeChan chan Message
+}
+
+func newConnection(logger Logger, conn *websocket.Conn, writeChanSize int) *connection {
+	c := &connection{
+		logger:     logger,
+		conn:       conn,
+		closedChan: make(chan struct{}),
+		writeChan:  make(chan Message, writeChanSize),
+	}
+
+	go c.messageWriter()
+
+	return c
 }
 
 func (c *connection) WriteMessage(message Message) error {
@@ -43,11 +58,23 @@ func (c *connection) WriteMessage(message Message) error {
 		return fmt.Errorf("invalid message type: %d", message.msgType)
 	}
 
-	err := c.conn.WriteMessage(message.msgType, message.Message)
-	if err != nil {
-		return fmt.Errorf("failed to write message: %v", err)
-	}
+	c.writeChan <- message
 	return nil
+}
+
+func (c *connection) messageWriter() {
+	for {
+		select {
+		case <-c.closedChan:
+			return
+		case msg := <-c.writeChan:
+			err := c.conn.WriteMessage(msg.msgType, msg.Message)
+			if err != nil {
+				c.logger.Printf("failed to write message: %v", err)
+				return
+			}
+		}
+	}
 }
 
 func (c *connection) Close() error {

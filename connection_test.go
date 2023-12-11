@@ -47,9 +47,7 @@ func TestConnection_Write(t *testing.T) {
 	assert.NoError(t, err)
 	defer conn.Close()
 
-	wsConn := &connection{
-		conn: conn,
-	}
+	wsConn := newConnection(DefaultLogger(), conn, 10)
 
 	err = wsConn.WriteMessage(message)
 	assert.NoError(t, err)
@@ -88,9 +86,7 @@ func TestConnection_Close(t *testing.T) {
 	assert.NoError(t, err)
 	defer conn.Close()
 
-	wsConn := &connection{
-		conn: conn,
-	}
+	wsConn := newConnection(DefaultLogger(), conn, 10)
 
 	err = wsConn.Close()
 	assert.NoError(t, err)

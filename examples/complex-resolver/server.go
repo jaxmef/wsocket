@@ -16,7 +16,7 @@ import (
 // Event resolver will handle messages with the data.type "info" and "error".
 
 func main() {
-	wsClient := wsocket.NewClient(context.Background(), getResolver(), nil)
+	wsClient := wsocket.NewClient(context.Background(), getResolver(), nil, 10)
 	wsClient.AddMiddleware(messageLogger)
 
 	upgrader := &websocket.Upgrader{}

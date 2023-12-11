@@ -16,7 +16,7 @@ func main() {
 	resolver := wsocket.NewJSONResolver("type")
 	resolver.AddHandler("sum-request", handleSum)
 
-	wsClient := wsocket.NewClient(context.Background(), resolver, nil)
+	wsClient := wsocket.NewClient(context.Background(), resolver, nil, 10)
 	wsClient.AddMiddleware(messageLogger)
 
 	upgrader := &websocket.Upgrader{}

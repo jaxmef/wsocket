@@ -15,7 +15,7 @@ func main() {
 	resolver := wsocket.NewJSONResolver("type")
 	resolver.AddHandler("sum-response", handleSum)
 
-	wsClient := wsocket.NewClient(context.Background(), resolver, nil)
+	wsClient := wsocket.NewClient(context.Background(), resolver, nil, 10)
 	wsClient.AddMiddleware(messageLogger)
 
 	serverURL := "ws://localhost:8080/ws"
